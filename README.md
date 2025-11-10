@@ -40,3 +40,7 @@ python start_proxy.py --server-ip <your-computer-ip> --server-port 8080
      - ✅ Valid: Redirect to `http://<your-computer-ip>:8080/`
   - Visit again: `http://<your-computer-ip>:8080/`
      - ✅ 200 OK (valid cookie)
+## Task 2: Implement hybrid chat application
+## Task 3: Put It All Together
+    
+
