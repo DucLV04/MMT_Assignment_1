@@ -48,6 +48,8 @@ from .response import *
 from .httpadapter import HttpAdapter
 from .dictionary import CaseInsensitiveDict
 
+
+
 def handle_client(ip, port, conn, addr, routes):
     """
     Initializes an HttpAdapter instance and delegates the client handling logic to it.
@@ -90,6 +92,14 @@ def run_backend(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+            #########IMPLEMENT##########################################
+            # Tạo thread mới để xử lý client -> Luồng mới được tạo nhưng chưa chạy ngay lập tức.
+            client_thread = threading.Thread(target=handle_client, args=(ip, port, conn, addr, routes))
+            # chương trình chính (main thread) kết thúc, các daemon thread sẽ tự động dừng lại
+            client_thread.daemon = True
+            #Bắt đầu chạy luồng
+            client_thread.start()
+            ############################################################
     except socket.error as e:
       print("Socket error: {}".format(e))
 

@@ -32,14 +32,17 @@ import threading
 from .response import *
 from .httpadapter import HttpAdapter
 from .dictionary import CaseInsensitiveDict
+import random
+_RR_INDEX = {}
 
 #: A dictionary mapping hostnames to backend IP and port tuples.
 #: Used to determine routing targets for incoming requests.
 PROXY_PASS = {
-    "192.168.56.103:8080": ('192.168.56.103', 9000),
-    "app1.local": ('192.168.56.103', 9001),
-    "app2.local": ('192.168.56.103', 9002),
+    "10.0.255.132:8080": ('10.0.255.132', 9000),
+    "app1.local": ('10.0.19.29', 9001),
+    "app2.local": ('10.0.19.29', 9002),
 }
+
 
 
 def forward_request(host, port, request):
@@ -90,30 +93,44 @@ def resolve_routing_policy(hostname, routes):
 
     print(hostname)
     proxy_map, policy = routes.get(hostname,('127.0.0.1:9000','round-robin'))
-    print proxy_map
-    print policy
+    print(proxy_map)
+    print(policy)
 
     proxy_host = ''
     proxy_port = '9000'
     if isinstance(proxy_map, list):
         if len(proxy_map) == 0:
             print("[Proxy] Emtpy resolved routing of hostname {}".format(hostname))
-            print "Empty proxy_map result"
+            print("Empty proxy_map result")
             # TODO: implement the error handling for non mapped host
             #       the policy is design by team, but it can be 
             #       basic default host in your self-defined system
             # Use a dummy host to raise an invalid connection
             proxy_host = '127.0.0.1'
             proxy_port = '9000'
-        elif len(value) == 1:
+        elif len(proxy_map) == 1:
+            # proxy_map is a single entry list
+            # Example: ["10.0.19.29:9000"]
+            # => proxy_host = "10.0.19.29"
+            # => proxy_port = "9000"
             proxy_host, proxy_port = proxy_map[0].split(":", 2)
-        #elif: # apply the policy handling 
-        #   proxy_map
-        #   policy
-        else:
-            # Out-of-handle mapped host
-            proxy_host = '127.0.0.1'
-            proxy_port = '9000'
+            
+        elif len(proxy_map) >= 2:
+            print("[Proxy] resolve route of hostname {} with policy {}".format(hostname, policy))
+            if policy == 'round-robin':
+                global _RR_INDEX
+                index = _RR_INDEX.get(hostname, 0)
+                proxy_host, proxy_port = proxy_map[index].split(":", 2)
+                index = (index + 1) % len(proxy_map)
+                _RR_INDEX[hostname] = index
+            elif policy == 'random':
+                selected = random.choice(proxy_map)
+                proxy_host, proxy_port = selected.split(":", 2)
+            else:
+                print("[Proxy] Unknown policy {}, using default host".format(policy))
+                # Out-of-handle mapped host
+                proxy_host = '127.0.0.1' 
+                proxy_port = '9000'
     else:
         print("[Proxy] resolve route of hostname {} is a singulair to".format(hostname))
         proxy_host, proxy_port = proxy_map.split(":", 2)
@@ -141,23 +158,38 @@ def handle_client(ip, port, conn, addr, routes):
 
     request = conn.recv(1024).decode()
 
-    # Extract hostname
+    # Extract Host header (keep original value, we'll test variants)
+    host_header = None
     for line in request.splitlines():
         if line.lower().startswith('host:'):
-            hostname = line.split(':', 1)[1].strip()
+            host_header = line.split(':', 1)[1].strip()
+            break
 
-    print("[Proxy] {} at Host: {}".format(addr, hostname))
+    # Normalize variants: full header (may include port), host without port,
+    # and host combined with the proxy listen port (useful when client omits port)
+    hostname_full = host_header
+    hostname_noport = hostname_full.split(':', 1)[0].strip() if hostname_full else None
+    hostname_with_listen = f"{hostname_noport}:{port}" if hostname_noport else None
 
-    # Resolve the matching destination in routes and need conver port
-    # to integer value
-    resolved_host, resolved_port = resolve_routing_policy(hostname, routes)
+    print("[Proxy] {} at Host: {}".format(addr, host_header))
+
+    # Try lookup in routes with priority: exact header, host:listen_port, host without port
+    if hostname_full and hostname_full in routes:
+        lookup_key = hostname_full
+    elif hostname_with_listen and hostname_with_listen in routes:
+        lookup_key = hostname_with_listen
+    else:
+        lookup_key = hostname_noport
+
+    # Resolve the matching destination in routes and convert port to int
+    resolved_host, resolved_port = resolve_routing_policy(lookup_key, routes)
     try:
         resolved_port = int(resolved_port)
     except ValueError:
         print("Not a valid integer")
 
     if resolved_host:
-        print("[Proxy] Host name {} is forwarded to {}:{}".format(hostname,resolved_host, resolved_port))
+        print("[Proxy] Host name {} is forwarded to {}:{}".format(lookup_key, resolved_host, resolved_port))
         response = forward_request(resolved_host, resolved_port, request)        
     else:
         response = (
@@ -199,6 +231,16 @@ def run_proxy(ip, port, routes):
             #        using multi-thread programming with the
             #        provided handle_client routine
             #
+
+            ######IMPLEMENT######################
+            thread = threading.Thread(
+                target=handle_client,
+                args=(ip, port, conn, addr, routes)
+            )
+            thread.daemon = True
+            thread.start()
+            ####################################
+
     except socket.error as e:
       print("Socket error: {}".format(e))
 
