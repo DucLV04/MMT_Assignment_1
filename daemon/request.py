@@ -85,6 +85,8 @@ class Request():
 
             if path == '/':
                 path = '/index.html'
+            if path == '/login':
+                path = '/login.html'
         except Exception:
             return None, None
 
@@ -169,25 +171,19 @@ class Request():
             # self.hook manipulation goes here
             # ...
             #
-        # Tách headers
+        self.auth=True
+        # Xử lý headers
         self.headers = self.prepare_headers(request)
-        # Tách body nếu có
-        parts = request.split('\r\n\r\n', 1)
-        if len(parts) > 1:
-            self.body = parts[1]
+        # Gán URL từ Host và path
+        host = self.headers.get('host', '')
+        if host:
+            self.url = f"http://{host}{self.path}"
         else:
-            self.body = ''
-
-        # Phân tích cookies nếu có
-        cookie_header = self.headers.get('cookie', '')
-        cookies = {}
-        if cookie_header:
-            for pair in cookie_header.split(';'):
-                if '=' in pair:
-                    k, v = pair.strip().split('=', 1)
-                    cookies[k] = v
-        self.cookies = cookies
-
+            self.url = self.path
+        # Xử lý body nếu có
+        self.prepare_body(request, files=None, json=None)
+        # Xử lý cookies nếu có
+        self.prepare_cookies(self.headers.get('cookie', ''))
         return
 
     def prepare_body(self, data, files, json=None):
@@ -196,6 +192,11 @@ class Request():
         self.prepare_content_length(self.body)
         # TODO prepare the request authentication
         # self.auth = ...
+        parts = data.split('\r\n\r\n', 1)
+        if len(parts) > 1:
+            self.body = parts[1]
+        else:
+            self.body = ''
         return
 
 
@@ -210,13 +211,22 @@ class Request():
         return
 
 
-    def prepare_auth(self, auth, url=""):
+    def prepare_auth(self):
         #
         # TODO prepare the request authentication
         #
-	# self.auth = ...
-        self.auth = get_auth_from_url(url) if url else auth
-        return self.auth
+	    # self.auth = ...
+        if (self.cookies.get("auth") == "true"):
+            self.auth = True
+        else:
+            self.auth = False
+        return
 
-    def prepare_cookies(self, cookies):
-            self.headers["Cookie"] = cookies
+    def prepare_cookies(self, cookie_header):
+        cookies = {}
+        if cookie_header:
+            for pair in cookie_header.split(';'):
+                if '=' in pair:
+                    k, v = pair.strip().split('=', 1)
+                    cookies[k] = v
+        self.cookies = cookies
