@@ -27,6 +27,10 @@ from .dictionary import CaseInsensitiveDict
 import os
 from urllib.parse import parse_qs, unquote_plus
 
+MUST_AUTH_ROUTES = [
+    ("GET", "/"),
+    ("GET", "/index.html")
+]
 class HttpAdapter:
     """
     A mutable :class:`HTTP adapter <HTTP adapter>` for managing client connections
@@ -82,7 +86,7 @@ class HttpAdapter:
         self.request = Request()
         #: Response
         self.response = Response()
-
+    
     def handle_client(self, conn, addr, routes):
         """
         Handle an incoming client connection.
@@ -110,43 +114,19 @@ class HttpAdapter:
         req.prepare(msg, routes)
         # ===== TASK 1A: LOGIN AUTHENTICATION =====
         # Login page
-        if req.method == 'GET' and req.path == '/login':
-            login_path = os.path.join(os.getcwd(), 'www', 'login.html')
-            try:
-                with open(login_path, 'rb') as f:
-                    body = f.read()
-            except Exception:
-                body = b"<h1>Login</h1>"
-            hdr = (
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/html\r\n"
-                f"Content-Length: {len(body)}\r\n"
-                "Connection: close\r\n"
-                "\r\n"
-            ).encode('utf-8')
-            conn.sendall(hdr + body)
-            conn.close()
-            return
         # Login submission
-        if req.method == "POST" and req.path == "/login":
-            # parse form encoded body (username=...&password=...)
-            """
-                POST /login as per assignment:
-                - Accept simple form urlencoded 'username=...&password=...'
-                - If admin/password -> Set-Cookie: auth=true; serve index.html
-                - Else -> 401 using catalog
-            """
+        if (req.method, req.path) == ("POST", "/login.html"):
             form = {}
             if req.body:
                 try:
                     form = {k: v[0] for k, v in parse_qs(req.body).items()}
                 except Exception:
                     form = {}
+            req.auth = False
             username = form.get('username', '')
             password = form.get('password', '')
-            if username == "admin" and password == "password":
-                # Valid credentials
-                # Successful login: set cookie and redirect to index
+            if username == "admin" and password == "password":#hardcoded for task1
+                req.auth = True
                 try:
                     index_path = os.path.join(os.getcwd(), 'www', 'index.html')
                     with open(index_path, 'rb') as f:
@@ -163,71 +143,12 @@ class HttpAdapter:
                     "\r\n"
                 ).encode('utf-8')
                 conn.sendall(hdr + body)
-                conn.close()
-                return
-            else:
-                # Invalid credentials -> 401 Unauthorized
-                try:
-                    ua_path = os.path.join(os.getcwd(), 'www', 'unAuthorized.html')
-                    with open(ua_path, 'rb') as f:
-                        body = f.read()
-                except Exception:
-                    body = b"<html><body><h1>401 Unauthorized</h1></body></html>"
-
-                hdr = (
-                    "HTTP/1.1 401 Unauthorized\r\n"
-                    "Content-Type: text/html\r\n"
-                    f"Content-Length: {len(body)}\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                ).encode('utf-8')
-                conn.sendall(hdr + body)
-                conn.close()
-                return         
+                return    
+              
         # ===== TASK 1B: COOKIE-BASED ACCESS CONTROL =====
         # Protect both '/' and '/index.html' (Request may normalize '/' -> '/index.html')
-        if req.method == "GET" and req.path in ("/", "/index.html"):
-            auth_cookie = req.cookies.get("auth")
-
-            if auth_cookie == "true":
-                # Có cookie hợp lệ
-                # Successful access to index page
-                try:
-                    index_path = os.path.join(os.getcwd(), 'www', 'index.html')
-                    with open(index_path, 'rb') as f:
-                        body = f.read()
-                except Exception:
-                    body = b"<html><body><h1>Welcome back! You are logged in.</h1></body></html>"
-                hdr = (
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/html\r\n"
-                    f"Content-Length: {len(body)}\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                ).encode('utf-8')
-                conn.sendall(hdr + body)
-                conn.close()
-                return
-            else:
-                # Không có hoặc sai cookie
-                # 401 Unauthorized page
-               try:
-                   ua_path = os.path.join(os.getcwd(), 'www', 'unAuthorized.html')
-                   with open(ua_path, 'rb') as f:
-                       body = f.read()
-               except Exception:
-                   body = b"<html><body><h1>401 Unauthorized</h1></body></html>"
-
-               hdr = (
-                   "HTTP/1.1 401 Unauthorized\r\n"
-                   "Content-Type: text/html\r\n"
-                   f"Content-Length: {len(body)}\r\n"
-                   "Connection: close\r\n"
-                   "\r\n"
-               ).encode('utf-8')
-               conn.sendall(hdr + body)
-               conn.close()
-               return
+        if (req.method, req.path) in MUST_AUTH_ROUTES:
+            req.prepare_auth()
         # Handle request hook
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
@@ -238,7 +159,6 @@ class HttpAdapter:
 
         # Build response
         response = resp.build_response(req)
-
         #print(response)
         conn.sendall(response)
         conn.close()
