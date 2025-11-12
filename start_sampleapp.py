@@ -33,7 +33,7 @@ from daemon.weaprous import WeApRous
 PORT = 8000  # Default port
 
 
-SERVER_IP = '10.90.236.119'
+SERVER_IP = '192.168.31.244'
 SERVER_PORT = 8000
 PEER_IP = None
 PEER_PORT = None
@@ -116,22 +116,23 @@ def get_list(headers, body):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((SERVER_IP, SERVER_PORT))
     s.sendall(request.encode())
-    response = s.recv(4096).decode("utf-8")
+    response = s.recv(4096)
     s.close()
-    return response
+    # Take response content (from /returnList of central server) and write to this peer's index_havelist.html
+    with open("www/index_havelist.html", "w") as f:
+        f.write(response.decode("utf-8"))
 
 @app.route("/returnList", methods=["GET"])
 def return_list(headers, body):
     # Central server call this when receive peer request to get peer list
-    print("[SampleApp] Current peer list:")  
     with open(PEER_LIST, 'r') as f:
         pl = [line.strip() for line in f if line.strip()]
     with open("www/index.html", "r") as f:
         html = f.read()
     items = "".join(f"<li>{p}</li>" for p in pl)
-    print("[SampleApp] peer list items: {}".format(items))
+    #Debug: print("[SampleApp] peer list items: {}".format(items))
     html = html.replace("{{ip_list}}", items)
-    print("[SampleApp] html: {}".format(html))
+    #Debug: print("[SampleApp] html: {}".format(html))
     with open("www/index_havelist.html", "w") as f:
         f.write(html)
 
@@ -144,6 +145,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     PEER_IP = args.server_ip
     PEER_PORT = args.server_port
+
+    # Delete existing peer list file before start
+    open(PEER_LIST, "w").close()
 
     # Prepare and launch the RESTful application
     app.prepare_address(PEER_IP, PEER_PORT)

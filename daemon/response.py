@@ -211,14 +211,6 @@ class Response():
                 content = f.read()
             return len(content), content
 
-        # Fallback: if not found in base_dir (eg. static/), try www/ directory
-        alt_path = os.path.join(BASE_DIR + "www/", path.lstrip('/'))
-        if os.path.exists(alt_path) and os.path.isfile(alt_path):
-            print("[Response] falling back to {}".format(alt_path))
-            with open(alt_path, 'rb') as f:
-                content = f.read()
-            return len(content), content
-
         # Not found
         raise FileNotFoundError(filepath)
 
@@ -265,7 +257,10 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        fmt_header = headers
+        fmt_header = "HTTP/1.1 200 OK\r\n"
+        for key, value in headers.items():
+            fmt_header += "{}: {}\r\n".format(key, value)
+        fmt_header += "\r\n"
         return str(fmt_header).encode('utf-8')
 
     def build_notfound(self):
@@ -317,6 +312,8 @@ class Response():
             if path == "/returnList":
                 base_dir = self.prepare_content_type(mime_type = 'text/html')
                 path = "/index_havelist.html"
+                c_len, self._content = self.build_content(path, base_dir)
+                return self._content
             else:
                 return self.build_notfound()
         else:

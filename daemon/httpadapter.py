@@ -104,7 +104,7 @@ class HttpAdapter:
 
         # Handle the request
         msg = conn.recv(1024).decode()
-        print("msg: {}".format(msg))
+        #Debug: print("msg: {}".format(msg))
         req.prepare(msg, routes)
 
         # Handle request hook
@@ -114,17 +114,11 @@ class HttpAdapter:
             #
             # TODO: handle for App hook here
             #
-            if req.hook._route_path == "/getList":
-                # Handle special response for this hook
-                response = hookres.encode("utf-8")
-                conn.sendall(response)
-                conn.close()
-                return
 
         # Build response
         response = resp.build_response(req)
 
-        #print(response)
+        #Debug: print(response.decode("utf-8"))
         conn.sendall(response)
         conn.close()
 
