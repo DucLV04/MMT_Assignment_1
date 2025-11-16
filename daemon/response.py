@@ -227,6 +227,8 @@ class Response():
         reqhdr = request.headers
         rsphdr = self.headers
 
+
+
         #Build dynamic headers
         headers = {
                 "Accept": "{}".format(reqhdr.get("Accept", "application/json")),
@@ -281,7 +283,21 @@ class Response():
                 "404 Not Found"
             ).encode('utf-8')
 
+    def build_unauthorized(self):
+        """
+        Constructs a standard 401 Not Authorized HTTP response.
 
+        :rtype bytes: Encoded 401 response.
+        """
+        body = b"<html><body><h1>401 Unauthorized</h1></body></html>"
+        hdr = (
+            "HTTP/1.1 401 Unauthorized\r\n"
+            "Content-Type: text/html\r\n"
+            f"Content-Length: {len(body)}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        ).encode('utf-8')
+        return hdr + body
     def build_response(self, request):
         """
         Builds a full HTTP response including headers and content based on the request.
@@ -292,6 +308,9 @@ class Response():
         """
 
         path = request.path
+
+        if (request.auth==False):
+            return self.build_unauthorized()
 
         mime_type = self.get_mime_type(path)
         print("[Response] {} path {} mime_type {}".format(request.method, request.path, mime_type))
