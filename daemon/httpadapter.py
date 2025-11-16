@@ -20,9 +20,12 @@ raw URL paths and RESTful route definitions, and integrates with
 Request and Response objects to handle client-server communication.
 """
 
+import urllib
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
+import os
+from urllib.parse import parse_qs, unquote_plus
 
 MUST_AUTH_ROUTES = [
     ("GET", "/"),
@@ -108,7 +111,6 @@ class HttpAdapter:
 
         # Handle the request
         msg = conn.recv(1024).decode()
-        #Debug: print("msg: {}".format(msg))
         req.prepare(msg, routes)
         # ===== TASK 1A: LOGIN AUTHENTICATION =====
         # Login page
@@ -149,8 +151,8 @@ class HttpAdapter:
             req.prepare_auth()
         # Handle request hook
         if req.hook:
-            print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_methods,req.hook._route_path))
-            hookres = req.hook(headers = req.headers,body = req.body)
+            print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
+            req.hook(headers = "bksysnet",body = "get in touch")
             #
             # TODO: handle for App hook here
             #

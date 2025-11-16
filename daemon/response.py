@@ -25,8 +25,7 @@ import os
 import mimetypes
 from .dictionary import CaseInsensitiveDict
 
-#BASE_DIR = ""
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) + os.sep
+BASE_DIR = ""
 
 class Response():   
     """The :class:`Response <Response>` object, which contains a
@@ -162,10 +161,23 @@ class Response():
             else:
                 handle_text_other(sub_type)
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
-            self.headers['Content-Type']='image/{}'.format(sub_type)
+            if sub_type == 'x-icon':  # favicon.ico
+                base_dir = BASE_DIR + "static/images/"
+            else:
+                base_dir = BASE_DIR + "static/"
+            self.headers['Content-Type'] = 'image/{}'.format(sub_type)
+
         elif main_type == 'application':
-            base_dir = BASE_DIR+"apps/"
+            if sub_type == 'xml':
+                base_dir = BASE_DIR + "static/xml/"
+            elif sub_type == 'zip':
+                base_dir = BASE_DIR + "static/files/"
+            elif sub_type == 'javascript':
+                base_dir = BASE_DIR + "static/js/"
+            elif sub_type == 'json':
+                base_dir = BASE_DIR + "apps/"
+            else:
+                base_dir = BASE_DIR + "apps/"
             self.headers['Content-Type']='application/{}'.format(sub_type)
         #
         #  TODO: process other mime_type
@@ -179,6 +191,11 @@ class Response():
         #        video/mpeg
         #        ...
         #
+        ######IMPLEMENT######################
+        elif main_type == 'video':
+            base_dir = BASE_DIR + "static/videos/"
+            self.headers['Content-Type'] = 'video/{}'.format(sub_type)
+        
         else:
             raise ValueError("Invalid MEME type: main_type={} sub_type={}".format(main_type,sub_type))
 
@@ -202,17 +219,19 @@ class Response():
             #  TODO: implement the step of fetch the object file
             #        store in the return value of content
             #
-        #with open(filepath, 'rb') as f:
-            #content = f.read()
-        #return len(content), content
-        # Try the requested location first
-        if os.path.exists(filepath) and os.path.isfile(filepath):
+        ######IMPLEMENT######################
+        try:
             with open(filepath, 'rb') as f:
                 content = f.read()
-            return len(content), content
+                return len(content), content
+        except FileNotFoundError:
+            print("[Response] File not found: {}".format(filepath))
+            return 0, b"404 Not Found"
+        except Exception as e:
+            print("[Response] Error reading file: {}".format(e))
+            return 0, b"500 Internal Server Error"
+        ###################################3
 
-        # Not found
-        raise FileNotFoundError(filepath)
 
 
     def build_response_header(self, request):
@@ -224,7 +243,9 @@ class Response():
 
         :rtypes bytes: encoded HTTP response header.
         """
+        #Header from request client
         reqhdr = request.headers
+        #Header from response server
         rsphdr = self.headers
 
 
@@ -255,15 +276,30 @@ class Response():
             #  TODO: implement the header building to create formated
             #        header from the provied headers
             #
+        ######IMPLEMENT######################
+
+        #Tạo fmt_header từ dictionary headers
+
+        status_code = getattr(self, 'status_code', 200) or 200
+        reason = self.reason or (
+            "OK" if status_code == 200 else
+            "Unauthorized" if status_code == 401 else
+            "Not Found" if status_code == 404 else
+            "Internal Server Error"
+        )
+        status_line = f"HTTP/1.1 {status_code} {reason}\r\n"
+
+        
+        # Lặp qua dictionary headers để tạo mỗi dòng dạng Key: Value\r\n.
+        header_lines = "".join(f"{k}: {v}\r\n" for k, v in headers.items())
+        fmt_header = status_line + header_lines + "\r\n"
+        ####################################
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        fmt_header = "HTTP/1.1 200 OK\r\n"
-        for key, value in headers.items():
-            fmt_header += "{}: {}\r\n".format(key, value)
-        fmt_header += "\r\n"
         return str(fmt_header).encode('utf-8')
+
 
     def build_notfound(self):
         """
@@ -322,19 +358,13 @@ class Response():
             base_dir = self.prepare_content_type(mime_type = 'text/html')
         elif mime_type == 'text/css':
             base_dir = self.prepare_content_type(mime_type = 'text/css')
+        elif mime_type == 'application/javascript':
+            base_dir = self.prepare_content_type(mime_type='application/javascript')
+        elif mime_type.startswith('image/'):
+            base_dir = self.prepare_content_type(mime_type=mime_type)
         #
         # TODO: add support objects
         #
-        elif mime_type.startswith('image/'):
-            base_dir = self.prepare_content_type(mime_type = mime_type)
-        elif mime_type == "application/octet-stream":
-            if path == "/returnList":
-                base_dir = self.prepare_content_type(mime_type = 'text/html')
-                path = "/index_havelist.html"
-                c_len, self._content = self.build_content(path, base_dir)
-                return self._content
-            else:
-                return self.build_notfound()
         else:
             return self.build_notfound()
 
