@@ -96,7 +96,7 @@ def resolve_routing_policy(hostname, routes):
     print(proxy_map)
     print(policy)
 
-    proxy_host = ''
+    proxy_host = '192.168.1.6'
     proxy_port = '9000'
     if isinstance(proxy_map, list):
         if len(proxy_map) == 0:

@@ -25,7 +25,7 @@ import os
 import mimetypes
 from .dictionary import CaseInsensitiveDict
 
-BASE_DIR = ""
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")) + os.sep
 
 class Response():   
     """The :class:`Response <Response>` object, which contains a
@@ -298,6 +298,10 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
+        fmt_header = "HTTP/1.1 200 OK\r\n"
+        for key, value in headers.items():
+            fmt_header += "{}: {}\r\n".format(key, value)
+        fmt_header += "\r\n"
         return str(fmt_header).encode('utf-8')
 
 
@@ -365,6 +369,15 @@ class Response():
         #
         # TODO: add support objects
         #
+        elif mime_type == "application/octet-stream":
+            if path == "/returnList":
+                base_dir = self.prepare_content_type(mime_type = 'text/html')
+                path = "/index_havelist.html"
+                c_len, self._content = self.build_content(path, base_dir)
+                return self._content
+            else:
+                return self.build_notfound()
+
         else:
             return self.build_notfound()
 
