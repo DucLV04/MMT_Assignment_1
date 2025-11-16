@@ -39,7 +39,6 @@ import socket
 import threading
 import argparse
 import re
-#from urlparse import urlparse
 from collections import defaultdict
 
 from daemon import create_proxy
