@@ -24,9 +24,10 @@
     </ul>
     <p>List of peer</p>
     <ul>
-        {{ip_list}}
+        <li>192.168.31.124:8000</li>
     </ul>
-    
+    Peer address: <input id="address" type="text" placeholder="Peer address">
+    <button id="sendBtn">Connect</button>
 </body>
 </html>
 <script>
@@ -34,11 +35,21 @@
         fetch('/submitInfo', {
             method: 'POST',
         })
+        .then(() => window.location.href = '/chat.html');
     }
     function getList() {
         fetch('/getList', {
             method: 'GET',
         })
-        .then(() => window.location.href = '/index_havelist.html');
+        .then(() => window.location.href = '/index.html');
     }
+    document.getElementById("sendBtn").addEventListener("click", () => {
+        const value = document.getElementById("address").value;
+
+        fetch("/connect", {
+            method: "POST",
+            body: JSON.stringify({address: value})
+        })
+        .then(() => window.location.href = '/chat.html');
+    });
 </script>

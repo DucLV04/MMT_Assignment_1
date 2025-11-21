@@ -69,12 +69,13 @@ class Request():
         try:
             lines = request.splitlines()
             first_line = lines[0]
+            print("[Request] First line: {}".format(first_line))
             method, path, version = first_line.split()
 
             if path == '/':
                 path = '/index.html'
         except Exception:
-            return None, None
+            return None, None, None
 
         return method, path, version
              
@@ -111,6 +112,7 @@ class Request():
             #
 
         self.headers = self.prepare_headers(request)
+        self.body = self.prepare_body(request)
         cookies = self.headers.get('cookie', '')
             #
             #  TODO: implement the cookie function here
@@ -118,15 +120,17 @@ class Request():
 
         return
 
-    def prepare_body(self, data, files, json=None):
+    def prepare_body(self, request):
         self.prepare_content_length(self.body)
-        self.body = body
         #
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        return
-
+        lines = request.split('\r\n\r\n', 1)
+        if len(lines) < 2:
+            return ""
+        body = lines[1]
+        return body
 
     def prepare_content_length(self, body):
         self.headers["Content-Length"] = "0"

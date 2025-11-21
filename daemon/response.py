@@ -159,11 +159,16 @@ class Response():
                 base_dir = BASE_DIR+"static/"
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
+            elif sub_type == 'txt':
+                base_dir = BASE_DIR+"db/"
             else:
                 handle_text_other(sub_type)
         elif main_type == 'image':
-            base_dir = BASE_DIR+"static/"
             self.headers['Content-Type']='image/{}'.format(sub_type)
+            if sub_type == 'x-icon':
+                base_dir = BASE_DIR + "static/images"
+            else: 
+                base_dir = BASE_DIR+"static/"
         elif main_type == 'application':
             base_dir = BASE_DIR+"apps/"
             self.headers['Content-Type']='application/{}'.format(sub_type)
@@ -205,14 +210,20 @@ class Response():
         #with open(filepath, 'rb') as f:
             #content = f.read()
         #return len(content), content
-        # Try the requested location first
-        if os.path.exists(filepath) and os.path.isfile(filepath):
+        try:
             with open(filepath, 'rb') as f:
                 content = f.read()
             return len(content), content
+        except FileNotFoundError:
+            raise FileNotFoundError(filepath)
+        # Try the requested location first
+        #if os.path.exists(filepath) and os.path.isfile(filepath):
+            #with open(filepath, 'rb') as f:
+                #content = f.read()
+            #return len(content), content
 
         # Not found
-        raise FileNotFoundError(filepath)
+        #raise FileNotFoundError(filepath)
 
 
     def build_response_header(self, request):
@@ -311,7 +322,12 @@ class Response():
         elif mime_type == "application/octet-stream":
             if path == "/returnList":
                 base_dir = self.prepare_content_type(mime_type = 'text/html')
-                path = "/index_havelist.html"
+                path = "/index.html"
+                c_len, self._content = self.build_content(path, base_dir)
+                return self._content
+            elif path == "/receiveMsg":
+                base_dir = self.prepare_content_type(mime_type = 'text/txt')
+                path = "/msg_hist.txt"
                 c_len, self._content = self.build_content(path, base_dir)
                 return self._content
             else:
