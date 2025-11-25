@@ -344,7 +344,7 @@ class Response():
                 path = "/index.html"
                 c_len, self._content = self.build_content(path, base_dir)
                 return self._content
-            elif path == "/receiveMsg":
+            elif path == "/getChatHist":
                 base_dir = self.prepare_content_type(mime_type = 'text/txt')
                 path = "/msg_hist.txt"
                 c_len, self._content = self.build_content(path, base_dir)

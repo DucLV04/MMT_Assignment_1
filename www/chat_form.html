@@ -8,47 +8,57 @@
 </head>
 <body>
   <div class="chat-container">
-    <a href="/home.html" class="home-link">Homepage</a>
-    <div class="chat-title">Chatroom: {{addr}}</div>
+    <a href="#" onClick="disconnect()" class="home-link">Leave Chatroom</a>
+    <div class="chat-title" id="title">{{addr}}</div>
     <div class="messages" id="messages">
       {{msgs}}
     </div>
 
     <div class="input-area">
-      <input type="text" id="input" placeholder="Type a message..." />
-      <button onclick="sendMessage()">Send</button>
+      <input type="text" id="input" placeholder="Type a message..." onkeyup="checkInput()"/>
+      <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
     </div>
   </div>
 
   <script>
+    const inputEl = document.getElementById("input");
+    const sendBtn = document.getElementById("sendBtn");
+    const title = document.getElementById('title');
+
+    function checkInput() {
+      if (inputEl.value.trim() === '' || title.textContent === "Host has disconnected"){
+        sendBtn.disabled = true;
+      }
+      else{
+        sendBtn.disabled = false;
+      }
+    }
+
     function sendMessage() {
-      /*const input = document.getElementById("input");
-      const messages = document.getElementById("messages");
-
-      if (input.value.trim() === "") return;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "message-wrapper user";
-
-      const name = document.createElement("div");
-      name.className = "name";
-      name.textContent = "You";
-
-      const bubble = document.createElement("div");
-      bubble.className = "message user";
-      bubble.textContent = input.value;
-
-      wrapper.appendChild(name);
-      wrapper.appendChild(bubble);
-      messages.appendChild(wrapper);
-
-      input.value = "";
-      messages.scrollTop = messages.scrollHeight;*/
+      const message = inputEl.value.trim();
+      if (!message) return;
+      
+      sendBtn.disabled = true;
       fetch("/sendMsg", {
         method: "POST",
         body: JSON.stringify({message: input.value})
       })
-      .then(() => window.location.href = 'chat.html');
+      .then(() => {
+        inputEl.value = "";
+        sendBtn.disabled = true;
+        window.location.reload();
+      })
+    }
+
+    setTimeout(function() {
+      location.reload();
+    }, 5000);
+    
+    function disconnect() {
+      fetch("/disconnect", {
+        method: "DELETE",
+      })
+      .then(() => window.location.href = 'index.html');
     }
   </script>
 </body>

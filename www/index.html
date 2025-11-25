@@ -22,12 +22,13 @@
         <li><a href="#" onclick="getList()">Get list of peer</a></li>
         <li><a href="#" onClick="submitInfo()">Submit this peer info</a></li>
     </ul>
-    <p>List of peer</p>
-    <ul>
-        <li>192.168.31.124:8000</li>
-    </ul>
-    Peer address: <input id="address" type="text" placeholder="Peer address">
-    <button id="sendBtn">Connect</button>
+    <form id="connectForm">
+        <label>List of peer</label>
+        <select name="address">
+            
+        </select>
+        <button type="submit">Connect</button>
+    </form>
 </body>
 </html>
 <script>
@@ -43,12 +44,14 @@
         })
         .then(() => window.location.href = '/index.html');
     }
-    document.getElementById("sendBtn").addEventListener("click", () => {
-        const value = document.getElementById("address").value;
-
+    document.getElementById("connectForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const addressSelect = document.querySelector("select[name='address']");
+        const selectedValue = addressSelect.value;
+        
         fetch("/connect", {
             method: "POST",
-            body: JSON.stringify({address: value})
+            body: JSON.stringify({address: selectedValue})
         })
         .then(() => window.location.href = '/chat.html');
     });
