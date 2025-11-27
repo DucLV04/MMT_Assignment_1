@@ -158,6 +158,8 @@ class Response():
                 base_dir = BASE_DIR+"static/"
             elif sub_type == 'html':
                 base_dir = BASE_DIR+"www/"
+            elif sub_type == 'txt':
+                base_dir = BASE_DIR+"db/"
             else:
                 handle_text_other(sub_type)
         elif main_type == 'image':
@@ -372,7 +374,12 @@ class Response():
         elif mime_type == "application/octet-stream":
             if path == "/returnList":
                 base_dir = self.prepare_content_type(mime_type = 'text/html')
-                path = "/index_havelist.html"
+                path = "/index.html"
+                c_len, self._content = self.build_content(path, base_dir)
+                return self._content
+            elif path == "/getChatHist":
+                base_dir = self.prepare_content_type(mime_type = 'text/txt')
+                path = "/msg_hist.txt"
                 c_len, self._content = self.build_content(path, base_dir)
                 return self._content
             else:

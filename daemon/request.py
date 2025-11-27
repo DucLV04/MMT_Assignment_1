@@ -81,6 +81,7 @@ class Request():
         try:
             lines = request.splitlines()
             first_line = lines[0]
+            print("[Request] First line: {}".format(first_line))
             method, path, version = first_line.split()
 
             if path == '/':
@@ -88,7 +89,7 @@ class Request():
             if path == '/login':
                 path = '/login.html'
         except Exception:
-            return None, None
+            return None, None, None
 
         return method, path, version
              

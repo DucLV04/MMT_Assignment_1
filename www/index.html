@@ -13,11 +13,13 @@
         <li><a href="#" onclick="getList()">Get list of peer</a></li>
         <li><a href="#" onClick="submitInfo()">Submit this peer info</a></li>
     </ul>
-    <p>List of peer</p>
-    <ul>
-        {{ip_list}}
-    </ul>
-
+    <form id="connectForm">
+        <label>List of peer</label>
+        <select name="address">
+            
+        </select>
+        <button type="submit">Connect</button>
+    </form>
 </body>
 </html>
 <script>
@@ -25,11 +27,23 @@
         fetch('/submitInfo', {
             method: 'POST',
         })
+        .then(() => window.location.href = '/chat.html');
     }
     function getList() {
         fetch('/getList', {
             method: 'GET',
         })
-        .then(() => window.location.href = '/index_havelist.html');
+        .then(() => window.location.href = '/index.html');
     }
+    document.getElementById("connectForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const addressSelect = document.querySelector("select[name='address']");
+        const selectedValue = addressSelect.value;
+        
+        fetch("/connect", {
+            method: "POST",
+            body: JSON.stringify({address: selectedValue})
+        })
+        .then(() => window.location.href = '/chat.html');
+    });
 </script>
