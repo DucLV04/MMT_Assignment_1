@@ -31,8 +31,6 @@ import argparse
 from daemon.weaprous import WeApRous
 
 PORT = 8000  # Default port
-
-
 SERVER_IP = '192.168.31.244'
 SERVER_PORT = 8000
 PEER_IP = None
