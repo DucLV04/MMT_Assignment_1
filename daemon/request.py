@@ -86,8 +86,6 @@ class Request():
 
             if path == '/':
                 path = '/index.html'
-            if path == '/login':
-                path = '/login.html'
         except Exception:
             return None, None, None
 
@@ -185,6 +183,7 @@ class Request():
         self.prepare_body(request, files=None, json=None)
         # Xử lý cookies nếu có
         self.prepare_cookies(self.headers.get('cookie', ''))
+        #Debug print("Request auth", self.auth)
         return
 
     def prepare_body(self, data, files, json=None):

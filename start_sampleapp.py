@@ -27,12 +27,13 @@ and can be configured via command-line arguments.
 import json
 import socket
 import argparse
+from urllib.parse import parse_qs, unquote_plus 
 
 from daemon.weaprous import WeApRous
 
 PORT = 8000  # Default port
-SERVER_IP = '192.168.31.244'
-SERVER_PORT = 8000
+SERVER_IP = None
+SERVER_PORT = None
 PEER_IP = None
 PEER_PORT = None
 CONNECT_IP = None
@@ -42,7 +43,7 @@ PEER_LIST = "db/peer_list.txt"
 MSG_HIST = "db/msg_hist.txt"
 
 app = WeApRous()
-
+'''
 @app.route('/login', methods=['POST'])
 def login(headers="guest", body="anonymous"):
     """
@@ -68,16 +69,35 @@ def hello(headers, body):
     :param body (str): The request body or message payload.
     """
     print("[SampleApp] ['PUT'] Hello in {} to {}".format(headers, body))
-
+'''
 # Add routes
-@app.route("/", methods=["GET"])
-def home(headers, body):
-    print("[SampleApp] homepage. request headers: {}, request body: {}".format(headers, body))
-    #return {"message": "Welcome to the RESTful TCP WebApp"}
+# ===== TASK 1A: LOGIN AUTHENTICATION =====
+@app.route("/login", methods=["POST"])
+def login(headers, body):
+    print("[SampleApp] login. request headers: {}, request body: {}".format(headers, body))
+    data = {}
+    if body:
+        try:
+            data = {k: v[0] for k, v in parse_qs(body).items()}
+        except Exception:
+            data = {}
+    username = data.get('username', '')
+    password = data.get('password', '')
+    if username == "admin" and password == "password":#hardcoded for task1
+        return 200
+    else:
+        return 401
+
+@app.route("/logout", methods=["POST"])
+def logout(headers, body):
+    print("[SampleApp] logout. request headers: {}, request body: {}".format(headers, body))
+    return 200
 
 @app.route("/chat.html", methods=["GET"])
 def chatPage(headers, body):
     print("[SampleApp] chat page. request headers: {}, request body: {}".format(headers, body))
+    if (CONNECT_IP is None or CONNECT_PORT is None):
+        return 404
     try:
         msg_list = []
         with open("www/chat_form.html", "r") as f:
@@ -92,7 +112,7 @@ def chatPage(headers, body):
                 f"GET /getChatHist HTTP/1.1\r\n"
             )
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((SERVER_IP, SERVER_PORT))
+            s.connect((CONNECT_IP, CONNECT_PORT))
             s.sendall(request.encode())
             response = s.recv(4096).decode("utf-8")
             s.close()
@@ -123,12 +143,14 @@ def chatPage(headers, body):
         html = html.replace("{{msgs}}", msgs)
         with open("www/chat.html", "w") as f:
             f.write(html)
+        return 200
     except FileNotFoundError:
         raise FileNotFoundError
     
 @app.route("/getChatHist", methods=["GET"])
 def get_chat_hist(headers, body):
     print("[SampleApp] get chat hist for peer. request headers: {}, request body: {}".format(headers, body))
+    return 200
 
 # Peer-to-peer paradigm
 @app.route("/connect", methods=["POST"])
@@ -139,6 +161,7 @@ def connect(headers, body):
     addr = data.get("address")
     CONNECT_IP, CONNECT_PORT = addr.split(":")
     CONNECT_PORT = int(CONNECT_PORT)
+    return 200
 
 @app.route("/sendMsg", methods=["POST"])
 def send_msg(headers, body):
@@ -162,6 +185,7 @@ def send_msg(headers, body):
         s.connect((CONNECT_IP, CONNECT_PORT))
         s.sendall(request.encode())
         s.close()
+    return 200
     
 @app.route("/receiveMsg", methods=["POST"])
 def receive_msg(headers, body):
@@ -179,6 +203,7 @@ def receive_msg(headers, body):
             f.write(sender + " - " + msg + "\n")
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
 
 # Client-server paradigm
 @app.route("/submitInfo", methods=["POST"])
@@ -203,6 +228,7 @@ def submit_info(headers, body):
     s.connect((SERVER_IP, SERVER_PORT))
     s.sendall(request.encode())
     s.close()
+    return 200
 
 @app.route("/addInfo", methods=["POST"])
 def add_info(headers, body):
@@ -218,6 +244,7 @@ def add_info(headers, body):
                 f.write(addr + "\n")
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
 
 @app.route("/getList", methods=["GET"])
 def get_list(headers, body):
@@ -239,6 +266,7 @@ def get_list(headers, body):
             f.write(response.decode("utf-8"))
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
 
 @app.route("/returnList", methods=["GET"])
 def return_list(headers, body):
@@ -255,6 +283,7 @@ def return_list(headers, body):
             f.write(html)
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
 
 @app.route("/disconnect", methods=["DELETE"])
 def disconnect(headers, body):
@@ -278,6 +307,7 @@ def disconnect(headers, body):
             f.write("Disconnected")
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
     
 
 @app.route("/deleteInfo", methods=["DELETE"])
@@ -295,6 +325,7 @@ def delete_info(headers, body):
                     f.write(addr + "\n")      
     except FileNotFoundError:
         raise FileNotFoundError
+    return 200
 
 if __name__ == "__main__":
     # Parse command-line arguments to configure server IP and port
@@ -303,8 +334,21 @@ if __name__ == "__main__":
     parser.add_argument('--server-port', type=int, default=PORT)
  
     args = parser.parse_args()
-    PEER_IP = args.server_ip
-    PEER_PORT = args.server_port
+    SERVER_IP = args.server_ip
+    SERVER_PORT = args.server_port
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8',1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        PEER_IP = ip
+        PEER_PORT = 8000
+        s.close()
+    
+    print("This peer address: {}:{}".format(PEER_IP, PEER_PORT))
 
     # Delete existing peer list file before start
     try:
