@@ -13,9 +13,9 @@
     <nav class="navbar">
         <span class="nav-title">bksysnet@hcmut</span>
 
-        <div class="nav-right">
-            <button class="nav-btn" onclick="logout()">Logout</button>
-        </div>
+        <form method="POST" action="/logout" class="nav-right">
+            <button class="nav-btn" type="submit">Logout</button>
+        </form>
     </nav>
 
     <div class="header-box">
@@ -39,12 +39,6 @@
 </body>
 </html>
 <script>
-    function logout() {
-        fetch('/logout', {
-            method: 'POST',
-        })
-        .then(() => window.location.href = 'login.html')
-    }
     function submitInfo() {
         fetch('/submitInfo', {
             method: 'POST',

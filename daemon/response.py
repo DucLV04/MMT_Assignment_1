@@ -352,15 +352,18 @@ class Response():
         return hdr + self._content
     
     def build_delete_cookie(self):
+        base_dir = self.prepare_content_type(mime_type = 'text/html')
+        path = "/login.html"
+        c_len, self._content = self.build_content(path, base_dir)
         hdr = (
             "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            f"Content-Length: 0\r\n"
+            "Content-Type: text/html\r\n"
+            f"Content-Length: {len(self._content)}\r\n"
             "Set-Cookie: auth=; Path=/; SameSite=Lax; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n"
             "Connection: close\r\n"
             "\r\n"
         ).encode('utf-8')
-        return hdr
+        return hdr + self._content
     
     def build_response(self, request):
         """
@@ -374,7 +377,6 @@ class Response():
         path = request.path
 
         if (request.auth==False):
-            #Debug print("unauth")
             return self.build_unauthorized()
 
         mime_type = self.get_mime_type(path)
@@ -407,10 +409,8 @@ class Response():
                 return self._content
             elif path == "/login":
                 if self.status_code == 200:
-                    #Debug print("ok")
                     return self.build_set_cookie()
                 else:
-                    #Debug print("wrong")
                     return self.build_unauthorized()
             elif path == "/logout":
                 return self.build_delete_cookie()

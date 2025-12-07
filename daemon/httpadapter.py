@@ -127,9 +127,7 @@ class HttpAdapter:
 
         # Build response
         response = resp.build_response(req)
-        #Debug: print(response)
         conn.sendall(response)
-        #Debug: print("send", response)
         conn.close()
 
     @property
