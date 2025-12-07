@@ -152,7 +152,9 @@ def get_chat_hist(headers, body):
     print("[SampleApp] get chat hist for peer. request headers: {}, request body: {}".format(headers, body))
     return 200
 
+#################################
 # Peer-to-peer paradigm
+#################################
 @app.route("/connect", methods=["POST"])
 def connect(headers, body):
     print("[SampleApp] connect to peer ip:port. request headers: {}, request body: {}".format(headers, body))
@@ -205,7 +207,9 @@ def receive_msg(headers, body):
         raise FileNotFoundError
     return 200
 
+#################################
 # Client-server paradigm
+#################################
 @app.route("/submitInfo", methods=["POST"])
 def submit_info(headers, body):
     # Peer function

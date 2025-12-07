@@ -159,6 +159,10 @@ button:hover {
 
 .nav-right {
     display: flex;
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
     gap: 10px;
 }
 
@@ -166,7 +170,7 @@ button:hover {
     background: white;  
     border: 1px solid white;
     color: #1a73e8;
-    padding: 10px 10px;
+    padding: 1px 1px 1px 1px;
     border-radius: 4px;
     font-size: 15px;
     cursor: pointer;
