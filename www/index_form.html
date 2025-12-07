@@ -10,18 +10,25 @@
 </head>
 
 <body>
-    <div>
-        <h1>bksysnet@hcmut  Domain</h1>
-        <p>This domain is for use in illustrative examples in documents.
-        </p>
-    
-        <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">  
+    <nav class="navbar">
+        <span class="nav-title">bksysnet@hcmut</span>
+
+        <div class="nav-right">
+            <button class="nav-btn" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="header-box">
+        <h1>bksysnet@hcmut Domain</h1>
+        <p>This domain is for use in illustrative examples in documents.</p>
+
+        <img src="images/welcome.png" alt="bksysnet at HCMUT" width="500" height="600">
+
+        <div class="action-buttons">
+            <button onclick="submitInfo()">Submit this peer info</button>
+            <button onclick="getList()">Get list of peer</button>
+        </div>
     </div>
-    <ul>
-        <li><a href="/login.html">Go to Login Page</a></li>
-        <li><a href="#" onclick="getList()">Get list of peer</a></li>
-        <li><a href="#" onClick="submitInfo()">Submit this peer info</a></li>
-    </ul>
     <form id="connectForm">
         <label>List of peer</label>
         <select name="address">
@@ -32,6 +39,12 @@
 </body>
 </html>
 <script>
+    function logout() {
+        fetch('/logout', {
+            method: 'POST',
+        })
+        .then(() => window.location.href = 'login.html')
+    }
     function submitInfo() {
         fetch('/submitInfo', {
             method: 'POST',

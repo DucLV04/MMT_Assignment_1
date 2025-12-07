@@ -300,10 +300,6 @@ class Response():
         # TODO prepare the request authentication
         #
 	# self.auth = ...
-        fmt_header = "HTTP/1.1 200 OK\r\n"
-        for key, value in headers.items():
-            fmt_header += "{}: {}\r\n".format(key, value)
-        fmt_header += "\r\n"
         return str(fmt_header).encode('utf-8')
 
 
@@ -340,6 +336,32 @@ class Response():
             "\r\n"
         ).encode('utf-8')
         return hdr + body
+    
+    def build_set_cookie(self):
+        base_dir = self.prepare_content_type(mime_type = 'text/html')
+        path = "/index.html"
+        c_len, self._content = self.build_content(path, base_dir)
+        hdr = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            f"Content-Length: {len(self._content)}\r\n"
+            "Set-Cookie: auth=true; Path=/; SameSite=Lax\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        ).encode('utf-8')
+        return hdr + self._content
+    
+    def build_delete_cookie(self):
+        hdr = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            f"Content-Length: 0\r\n"
+            "Set-Cookie: auth=; Path=/; SameSite=Lax; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        ).encode('utf-8')
+        return hdr
+    
     def build_response(self, request):
         """
         Builds a full HTTP response including headers and content based on the request.
@@ -352,6 +374,7 @@ class Response():
         path = request.path
 
         if (request.auth==False):
+            #Debug print("unauth")
             return self.build_unauthorized()
 
         mime_type = self.get_mime_type(path)
@@ -382,6 +405,15 @@ class Response():
                 path = "/msg_hist.txt"
                 c_len, self._content = self.build_content(path, base_dir)
                 return self._content
+            elif path == "/login":
+                if self.status_code == 200:
+                    #Debug print("ok")
+                    return self.build_set_cookie()
+                else:
+                    #Debug print("wrong")
+                    return self.build_unauthorized()
+            elif path == "/logout":
+                return self.build_delete_cookie()
             else:
                 return self.build_notfound()
 

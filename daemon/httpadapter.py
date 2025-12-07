@@ -20,16 +20,17 @@ raw URL paths and RESTful route definitions, and integrates with
 Request and Response objects to handle client-server communication.
 """
 
-import urllib
+import urllib #add
 from .request import Request
 from .response import Response
 from .dictionary import CaseInsensitiveDict
-import os
-from urllib.parse import parse_qs, unquote_plus
+import os #add
+from urllib.parse import parse_qs, unquote_plus #add
 
 MUST_AUTH_ROUTES = [
     ("GET", "/"),
-    ("GET", "/index.html")
+    ("GET", "/index.html"),
+    ("GET", "/chat.html")
 ]
 class HttpAdapter:
     """
@@ -112,39 +113,6 @@ class HttpAdapter:
         # Handle the request
         msg = conn.recv(1024).decode()
         req.prepare(msg, routes)
-        # ===== TASK 1A: LOGIN AUTHENTICATION =====
-        # Login page
-        # Login submission
-        if (req.method, req.path) == ("POST", "/login.html"):
-            form = {}
-            if req.body:
-                try:
-                    form = {k: v[0] for k, v in parse_qs(req.body).items()}
-                except Exception:
-                    form = {}
-            req.auth = False
-            username = form.get('username', '')
-            password = form.get('password', '')
-            if username == "admin" and password == "password":#hardcoded for task1
-                req.auth = True
-                try:
-                    index_path = os.path.join(os.getcwd(), 'www', 'index.html')
-                    with open(index_path, 'rb') as f:
-                        body = f.read()
-                except Exception:
-                    body = b"<html><body><h1>Welcome</h1></body></html>"
-
-                hdr = (
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/html\r\n"
-                    f"Content-Length: {len(body)}\r\n"
-                    "Set-Cookie: auth=true; Path=/\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                ).encode('utf-8')
-                conn.sendall(hdr + body)
-                return    
-              
         # ===== TASK 1B: COOKIE-BASED ACCESS CONTROL =====
         # Protect both '/' and '/index.html' (Request may normalize '/' -> '/index.html')
         if (req.method, req.path) in MUST_AUTH_ROUTES:
@@ -152,15 +120,16 @@ class HttpAdapter:
         # Handle request hook
         if req.hook:
             print("[HttpAdapter] hook in route-path METHOD {} PATH {}".format(req.hook._route_path,req.hook._route_methods))
-            req.hook(headers = "bksysnet",body = "get in touch")
+            resp.status_code = req.hook(headers = req.headers,body = req.body)
             #
             # TODO: handle for App hook here
             #
 
         # Build response
         response = resp.build_response(req)
-        #print(response)
+        #Debug: print(response)
         conn.sendall(response)
+        #Debug: print("send", response)
         conn.close()
 
     @property
